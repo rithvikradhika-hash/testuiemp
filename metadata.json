@@ -1,0 +1,6 @@
+{
+  "name": "TeamHub",
+  "description": "An interactive, elegant HR and Recruitment Dashboard for tracking applicants, scheduling interviews, and monitoring department performance.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
