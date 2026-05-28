@@ -78,21 +78,8 @@ export default function Sidebar({
         })}
       </nav>
 
-      {/* Footer Timer Widget & User profile */}
+      {/* Footer Timer Widget */}
       <div className="p-4 mt-auto border-t border-slate-100 bg-slate-50/50">
-        {/* Logged in User Profile Info */}
-        <div className="flex items-center gap-2.5 px-1 py-1.5 mb-3">
-          <img
-            src={currentUser.avatar}
-            alt={currentUser.name}
-            className="w-8 h-8 rounded-full object-cover border border-slate-200"
-          />
-          <div className="flex-1 min-w-0">
-            <p className="text-[11px] font-bold text-slate-800 truncate leading-tight">{currentUser.name}</p>
-            <p className="text-[9px] text-[#1bc1a1] font-bold mt-0.5 leading-none">{currentUser.role}</p>
-          </div>
-        </div>
-
         {/* Live Timer Widget */}
         <div className="bg-white border border-slate-150 rounded-xl p-3 shadow-3xs flex flex-col items-center">
           <div className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 select-none">

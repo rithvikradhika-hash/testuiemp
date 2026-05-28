@@ -20,7 +20,8 @@ import {
   Sparkles,
   Briefcase,
   FileText,
-  HelpCircle
+  HelpCircle,
+  X
 } from 'lucide-react';
 import { EmployeeTask } from '../types';
 
@@ -48,6 +49,16 @@ export default function TaskManagerSection({
   const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set());
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [activeDropdown, setActiveDropdown] = useState<{ taskId: string; type: 'owner' | 'status' | 'priority' } | null>(null);
+
+  // States for Add Task Modal popup
+  const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false);
+  const [targetGroupForNewTask, setTargetGroupForNewTask] = useState('To-Do');
+  const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [newTaskAssignedTo, setNewTaskAssignedTo] = useState('');
+  const [newTaskPriority, setNewTaskPriority] = useState<'Low' | 'Medium' | 'High' | 'Critical'>('Low');
+  const [newTaskStatus, setNewTaskStatus] = useState<EmployeeTask['status']>('Not Started');
+  const [newTaskDueDate, setNewTaskDueDate] = useState('');
+  const [newTaskNotes, setNewTaskNotes] = useState('');
 
   
   // Custom groupings State
@@ -266,31 +277,50 @@ export default function TaskManagerSection({
     return true;
   });
 
-  // Main task creation launcher
+  // Main task creation launcher (now opens the task modal)
   const handleAddNewTaskToGroup = (groupName: string, customTitle?: string) => {
-    const titleVal = customTitle || isAddingTaskInlineName.trim() || 'New task';
-    const firstEmployee = employeesList[0] || { name: 'Sophia Alexandra', avatar: '', department: 'Product Design' };
-    
-    onAddTask({
-      title: titleVal,
-      description: 'Staged from workspace inline insertion.',
-      assignedTo: firstEmployee.name,
-      assignedToAvatar: firstEmployee.avatar,
-      department: firstEmployee.department,
-      priority: 'Low',
-      status: groupName === 'Completed' ? 'Done' : 'Not Started',
-      dueDate: new Date().toISOString().split('T')[0],
-      progress: groupName === 'Completed' ? 100 : 0,
-      timeline: `${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${new Date(Date.now() + 86400000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
-      files: '',
-      notesText: 'Added via board shortcuts',
-      groupName: groupName,
-      lastUpdated: 'Just now'
-    });
+    setTargetGroupForNewTask(groupName);
+    setNewTaskTitle(customTitle || isAddingTaskInlineName.trim() || '');
+    setNewTaskAssignedTo(employeesList[0]?.name || '');
+    setNewTaskPriority('Low');
+    setNewTaskStatus(groupName === 'Completed' ? 'Done' : 'Not Started');
+    setNewTaskDueDate(new Date().toISOString().split('T')[0]);
+    setNewTaskNotes('');
+    setIsAddTaskModalOpen(true);
 
     setIsAddingTaskInlineName('');
     setIsAddingTaskGroup(null);
-    setNotifyMessage("Task appended successfully with standard editable metadata.");
+  };
+
+  const handleCreateTaskSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTaskTitle.trim()) return;
+
+    const selectedEmployee = employeesList.find(emp => emp.name === newTaskAssignedTo) || employeesList[0] || {
+      name: 'Sophia Alexandra',
+      avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=face',
+      department: 'Product Design'
+    };
+
+    onAddTask({
+      title: newTaskTitle.trim(),
+      description: 'Staged from workspace modal creation.',
+      assignedTo: selectedEmployee.name,
+      assignedToAvatar: selectedEmployee.avatar,
+      department: selectedEmployee.department,
+      priority: newTaskPriority,
+      status: newTaskStatus,
+      dueDate: newTaskDueDate || new Date().toISOString().split('T')[0],
+      progress: newTaskStatus === 'Done' || newTaskStatus === 'Completed' ? 100 : 0,
+      timeline: `${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${new Date(newTaskDueDate || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
+      files: '',
+      notesText: newTaskNotes.trim() || 'Created via board modal',
+      groupName: targetGroupForNewTask,
+      lastUpdated: 'Just now'
+    });
+
+    setIsAddTaskModalOpen(false);
+    setNotifyMessage("Task successfully created and added to the board!");
   };
 
   return (
@@ -1209,6 +1239,175 @@ export default function TaskManagerSection({
                 </button>
               </div>
 
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* DYNAMIC ADD TASK MODAL POPUP */}
+      <AnimatePresence>
+        {isAddTaskModalOpen && (
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ duration: 0.2 }}
+              className="w-full max-w-lg bg-white rounded-3xl border border-slate-100 shadow-2xl p-6 relative flex flex-col max-h-[90vh] overflow-y-auto"
+            >
+              {/* Modal Header */}
+              <div className="flex items-center justify-between pb-3 border-b border-slate-50 mb-4 select-none">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-655 flex items-center justify-center">
+                    <Briefcase className="w-4.5 h-4.5" />
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-slate-800 text-sm">Create New Task</h3>
+                    <p className="text-[10px] text-slate-400 font-bold">Add details for the new workflow item</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsAddTaskModalOpen(false)}
+                  className="p-1 rounded-full text-slate-400 hover:bg-slate-100 cursor-pointer transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Form */}
+              <form onSubmit={handleCreateTaskSubmit} className="space-y-4">
+                {/* Task Title */}
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1.5">
+                    Task Name
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="What needs to be done?"
+                    value={newTaskTitle}
+                    onChange={(e) => setNewTaskTitle(e.target.value)}
+                    className="w-full text-xs font-semibold px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:bg-white transition-colors"
+                    required
+                  />
+                </div>
+
+                {/* Dropdowns Row 1: Assignee & Group */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1.5">
+                      Assign To
+                    </label>
+                    <select
+                      value={newTaskAssignedTo}
+                      onChange={(e) => setNewTaskAssignedTo(e.target.value)}
+                      className="w-full text-xs font-bold px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 bg-white"
+                    >
+                      {employeesList.map((emp) => (
+                        <option key={emp.name} value={emp.name}>
+                          {emp.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1.5">
+                      Board Group
+                    </label>
+                    <select
+                      value={targetGroupForNewTask}
+                      onChange={(e) => setTargetGroupForNewTask(e.target.value)}
+                      className="w-full text-xs font-bold px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 bg-white"
+                    >
+                      {customGroups.map((g) => (
+                        <option key={g.name} value={g.name}>
+                          {g.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Dropdowns Row 2: Status & Priority */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1.5">
+                      Initial Status
+                    </label>
+                    <select
+                      value={newTaskStatus}
+                      onChange={(e) => setNewTaskStatus(e.target.value as any)}
+                      className="w-full text-xs font-bold px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 bg-white"
+                    >
+                      <option value="Not Started">Not Started</option>
+                      <option value="Working on it">Working on it</option>
+                      <option value="Stuck">Stuck</option>
+                      <option value="Done">Done</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1.5">
+                      Priority
+                    </label>
+                    <select
+                      value={newTaskPriority}
+                      onChange={(e) => setNewTaskPriority(e.target.value as any)}
+                      className="w-full text-xs font-bold px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 bg-white"
+                    >
+                      <option value="Low">Low</option>
+                      <option value="Medium">Medium</option>
+                      <option value="High">High</option>
+                      <option value="Critical">Critical</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Due Date */}
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1.5">
+                    Due Date
+                  </label>
+                  <input
+                    type="date"
+                    value={newTaskDueDate}
+                    onChange={(e) => setNewTaskDueDate(e.target.value)}
+                    className="w-full text-xs font-semibold px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:bg-white transition-colors"
+                    required
+                  />
+                </div>
+
+                {/* Notes */}
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1.5">
+                    Detailed Notes
+                  </label>
+                  <textarea
+                    placeholder="Any extra context or task objectives..."
+                    value={newTaskNotes}
+                    onChange={(e) => setNewTaskNotes(e.target.value)}
+                    className="w-full text-xs font-semibold px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:bg-white transition-colors min-h-[80px]"
+                  />
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-2 pt-2 border-t border-slate-50 justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setIsAddTaskModalOpen(false)}
+                    className="px-4 py-2 border border-slate-200 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-50 cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Check className="w-4 h-4" />
+                    <span>Create Task</span>
+                  </button>
+                </div>
+              </form>
             </motion.div>
           </div>
         )}
