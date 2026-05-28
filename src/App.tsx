@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { INITIAL_TASKS } from './data';
 import { EmployeeTask } from './types';
 
 // Importing sub components
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
+import LoginPage from './components/LoginPage';
 
 // Importing custom section pages
 import DashboardSection from './components/DashboardSection';
@@ -17,6 +18,10 @@ import TeamSection from './components/TeamSection';
 export default function App() {
   // Global Workspace State
   const [tasks, setTasks] = useState<EmployeeTask[]>(INITIAL_TASKS);
+
+  // Authentication & Session state
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const [sessionTime, setSessionTime] = useState<number>(0);
 
   // Active state management
   const [activeTab, setActiveTab] = useState<string>('dashboard');
@@ -32,6 +37,41 @@ export default function App() {
     { name: 'Clara Mentari', role: 'Support Representative', department: 'Customer Service', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&crop=face' },
     { name: 'David Beckham', role: 'Brand Outreach Lead', department: 'Marketing', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face' }
   ];
+
+  // User Profile configuration
+  const [userProfile, setUserProfile] = useState({
+    name: 'Alex Morgan',
+    role: 'Employee',
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face'
+  });
+
+  // Track session timer
+  useEffect(() => {
+    let interval: any = null;
+    if (isLoggedIn) {
+      interval = setInterval(() => {
+        setSessionTime((prev) => prev + 1);
+      }, 1000);
+    } else {
+      setSessionTime(0);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isLoggedIn]);
+
+  // Login handler
+  const handleLogin = (employee: { name: string; role: string; avatar: string }) => {
+    setUserProfile(employee);
+    setIsLoggedIn(true);
+    setSessionTime(0);
+  };
+
+  // Clock Out handler
+  const handleClockOut = () => {
+    setIsLoggedIn(false);
+    setSessionTime(0);
+  };
 
   // Task Actions
   const handleUpdateTaskStatus = (taskId: string, newStatus: EmployeeTask['status']) => {
@@ -85,16 +125,20 @@ export default function App() {
     setTasks((prev) => prev.filter((t) => t.id !== taskId));
   };
 
-  // User Profile configuration
-  const [userProfile, setUserProfile] = useState({
-    name: 'Alex Morgan',
-    role: 'Employee',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face'
-  });
-
   const handleUpdateUserProfile = (name: string, role: string) => {
     setUserProfile((prev) => ({ ...prev, name, role }));
   };
+
+  // Render Login Page if not signed in / clocked in
+  if (!isLoggedIn) {
+    const defaultUser = { name: 'Alex Morgan', role: 'Employee', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face' };
+    return (
+      <LoginPage
+        onLogin={handleLogin}
+        employees={[defaultUser, ...employeesList]}
+      />
+    );
+  }
 
   return (
     <div className="flex h-screen bg-[#edf2f7]/55 overflow-hidden font-sans text-slate-700 antialiased">
@@ -104,6 +148,9 @@ export default function App() {
         onTabChange={(tab) => {
           setActiveTab(tab);
         }}
+        currentUser={userProfile}
+        sessionTime={sessionTime}
+        onClockOut={handleClockOut}
       />
 
       {/* Main Page Layout Frame */}

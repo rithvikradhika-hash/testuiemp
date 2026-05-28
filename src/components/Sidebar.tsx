@@ -5,17 +5,31 @@ import {
   FolderKanban,
   Layers,
   BarChart3,
-  Users
+  Users,
+  LogOut
 } from 'lucide-react';
 
 interface SidebarProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
+  currentUser: { name: string; role: string; avatar: string };
+  sessionTime: number;
+  onClockOut: () => void;
+}
+
+function formatSessionTime(totalSecs: number): string {
+  const h = Math.floor(totalSecs / 3600);
+  const m = Math.floor((totalSecs % 3600) / 60);
+  const s = totalSecs % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
 export default function Sidebar({
   activeTab,
-  onTabChange
+  onTabChange,
+  currentUser,
+  sessionTime,
+  onClockOut
 }: SidebarProps) {
   const navItems: Array<{ id: string; name: string; icon: any }> = [
     { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard },
@@ -64,23 +78,41 @@ export default function Sidebar({
         })}
       </nav>
 
-      {/* Footer User Profile */}
-      <div className="p-4 mt-auto border-t border-slate-100">
-        <div className="flex items-center gap-3 px-2 py-2">
+      {/* Footer Timer Widget & User profile */}
+      <div className="p-4 mt-auto border-t border-slate-100 bg-slate-50/50">
+        {/* Logged in User Profile Info */}
+        <div className="flex items-center gap-2.5 px-1 py-1.5 mb-3">
           <img
-            src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face"
-            alt="Alex Morgan"
-            className="w-9 h-9 rounded-full object-cover border-2 border-slate-100"
+            src={currentUser.avatar}
+            alt={currentUser.name}
+            className="w-8 h-8 rounded-full object-cover border border-slate-200"
           />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-slate-800 truncate">Alex Morgan</p>
-            <p className="text-[10px] text-slate-400 font-bold flex items-center gap-1">
-              <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full" />
-              Admin
-            </p>
+            <p className="text-[11px] font-bold text-slate-800 truncate leading-tight">{currentUser.name}</p>
+            <p className="text-[9px] text-[#1bc1a1] font-bold mt-0.5 leading-none">{currentUser.role}</p>
           </div>
         </div>
-        <div className="text-[11px] text-[#94a3b8] text-center mt-3 font-mono">
+
+        {/* Live Timer Widget */}
+        <div className="bg-white border border-slate-150 rounded-xl p-3 shadow-3xs flex flex-col items-center">
+          <div className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 select-none">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#1bc1a1] animate-pulse" />
+            Active Session
+          </div>
+          <span className="font-mono text-base font-black text-slate-700 tracking-tight tabular-nums mb-2">
+            {formatSessionTime(sessionTime)}
+          </span>
+
+          <button
+            onClick={onClockOut}
+            className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 bg-rose-500 hover:bg-rose-600 text-white rounded-lg text-[10px] font-black tracking-wide cursor-pointer transition-colors shadow-2xs"
+          >
+            <LogOut className="w-3.5 h-3.5 shrink-0" />
+            <span>Clock Out</span>
+          </button>
+        </div>
+
+        <div className="text-[10px] text-[#94a3b8] text-center mt-3 font-semibold">
           TimeSync • v1.0.0
         </div>
       </div>
